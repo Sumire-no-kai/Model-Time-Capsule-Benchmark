@@ -5,13 +5,14 @@ from test_card_api import api
 class DiagnosticsTests(unittest.TestCase):
     def test_truncation_separate_from_received(self):
         manifest={'planned_runs':3,'configuration':{'max_output_tokens':8192},'attempts':[{'status':'truncated'}]*3}
-        reports=[{'run_id':f'run-0{i}','objective':{'format_valid':False,'error':'No complete JSON block'}} for i in range(1,4)]
+        reports=[{'run_id':f'run-0{i}','objective':{'format_valid':False,'salvaged':i<3,'error':'No complete JSON block'}} for i in range(1,4)]
         counts,text=api.run_diagnostics(manifest,reports)
         self.assertEqual(counts['received_replies'],3)
         self.assertEqual(counts['format_valid_cards'],0)
         self.assertEqual(counts['truncated_runs'],3)
+        self.assertEqual(counts['salvaged_cards'],2)
         self.assertIn('8192',text)
-        self.assertIn('not evidence that all answers were wrong',text)
+        self.assertIn('graded on the questions that were written out completely',text)
 
     def test_clean_run_has_no_truncation_claim(self):
         counts,text=api.run_diagnostics({'planned_runs':1,'configuration':{},'attempts':[{'status':'complete'}]},[{'run_id':'run-01','objective':{'format_valid':True}}])
