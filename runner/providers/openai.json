@@ -1,0 +1,10 @@
+{
+  "provider": "openai",
+  "runs": 5,
+  "language": "zh",
+  "timezone": "Australia/Sydney",
+  "timeout_seconds": 900,
+  "max_output_tokens": 65536,
+  "temperature": null,
+  "extra_body": {}
+}

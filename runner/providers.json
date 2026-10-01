@@ -1,0 +1,77 @@
+{
+  "verified_on": "2026-10-01",
+  "providers": {
+    "claude": {
+      "label": "Claude / Anthropic",
+      "base_url": "https://api.anthropic.com/v1",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "protocol": "anthropic_messages",
+      "token_parameter": "max_tokens",
+      "source": "https://platform.claude.com/docs/en/api/messages/create"
+    },
+    "openai": {
+      "label": "OpenAI / ChatGPT models",
+      "base_url": "https://api.openai.com/v1",
+      "api_key_env": "OPENAI_API_KEY",
+      "protocol": "chat_completions",
+      "token_parameter": "max_completion_tokens",
+      "source": "https://developers.openai.com/api/reference/overview"
+    },
+    "gemini": {
+      "label": "Google Gemini",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "api_key_env": "GEMINI_API_KEY",
+      "protocol": "chat_completions",
+      "token_parameter": "max_tokens",
+      "source": "https://ai.google.dev/gemini-api/docs/openai"
+    },
+    "glm": {
+      "label": "GLM / BigModel China",
+      "base_url": "https://open.bigmodel.cn/api/paas/v4",
+      "api_key_env": "BIGMODEL_API_KEY",
+      "protocol": "chat_completions",
+      "token_parameter": "max_tokens",
+      "source": "https://docs.bigmodel.cn/cn/guide/develop/openai/introduction"
+    },
+    "zai": {
+      "label": "Z.AI international",
+      "base_url": "https://api.z.ai/api/paas/v4",
+      "api_key_env": "ZAI_API_KEY",
+      "protocol": "chat_completions",
+      "token_parameter": "max_tokens",
+      "source": "https://docs.z.ai/api-reference/introduction"
+    },
+    "kimi": {
+      "label": "Kimi / Moonshot China",
+      "base_url": "https://api.moonshot.cn/v1",
+      "api_key_env": "MOONSHOT_API_KEY",
+      "protocol": "chat_completions",
+      "token_parameter": "max_completion_tokens",
+      "source": "https://platform.kimi.com/docs/api/chat"
+    },
+    "kimi-intl": {
+      "label": "Kimi / Moonshot international",
+      "base_url": "https://api.moonshot.ai/v1",
+      "api_key_env": "MOONSHOT_INTL_API_KEY",
+      "protocol": "chat_completions",
+      "token_parameter": "max_completion_tokens",
+      "source": "https://platform.kimi.ai/docs/api/chat"
+    },
+    "deepseek": {
+      "label": "DeepSeek",
+      "base_url": "https://api.deepseek.com",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "protocol": "chat_completions",
+      "token_parameter": "max_tokens",
+      "source": "https://api-docs.deepseek.com/guides/json_mode/"
+    },
+    "grok": {
+      "label": "Grok / xAI",
+      "base_url": "https://api.x.ai/v1",
+      "api_key_env": "XAI_API_KEY",
+      "protocol": "chat_completions",
+      "token_parameter": "max_tokens",
+      "source": "https://docs.x.ai/developers/rest-api-reference/inference/chat"
+    }
+  }
+}

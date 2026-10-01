@@ -1,0 +1,10 @@
+{
+  "provider": "select",
+  "timeout_seconds": 900,
+  "runs": 5,
+  "language": "zh",
+  "timezone": "Australia/Sydney",
+  "max_output_tokens": 65536,
+  "temperature": null,
+  "extra_body": {}
+}
