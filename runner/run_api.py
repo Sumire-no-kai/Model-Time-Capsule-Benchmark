@@ -596,6 +596,20 @@ def session_outcome(directory):
     return ('done' if complete else 'incomplete'),f'main {main_ok}/{manifest["planned_runs"]}'+(f', paper B {b_ok}/{manifest["planned_runs"]}' if b_wanted else '')
 
 
+def interleave_by_provider(jobs):
+    """Round-robin the jobs across providers. The pool takes jobs in submission order and a worker waiting for its
+    provider's slot is idle, so a long run of one provider's jobs would otherwise stop the other providers starting."""
+    queues={}
+    for job in jobs:
+        queues.setdefault(job['config']['provider'],[]).append(job)
+    ordered=[]
+    while any(queues.values()):
+        for queue in queues.values():
+            if queue:
+                ordered.append(queue.pop(0))
+    return ordered
+
+
 def run_batch(jobs,keys_file,output_root,workers=1,per_provider=1,manifest=None,batch_dir=None):
     """Run many models. Providers run in parallel up to `workers`; each provider serves `per_provider` jobs at a time.
 
@@ -660,7 +674,7 @@ def run_batch(jobs,keys_file,output_root,workers=1,per_provider=1,manifest=None,
     save()
     try:
         with ThreadPoolExecutor(max_workers=max(1,workers)) as pool:
-            futures=[pool.submit(work,job) for job in jobs]
+            futures=[pool.submit(work,job) for job in interleave_by_provider(jobs)]
             try:
                 for future in futures:
                     future.result()
