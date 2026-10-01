@@ -33,7 +33,41 @@ class ClaudeHandler(BaseHTTPRequestHandler):
         self.reply({'model':'claude-fixture-snapshot','stop_reason':'max_tokens','content':[{'type':'thinking','thinking':'HIDDEN-FIXTURE'},{'type':'text','text':'Visible answer'}], 'usage':{'input_tokens':11,'output_tokens':22}})
 
 
+class ClaudeStreamHandler(BaseHTTPRequestHandler):
+    def log_message(self,*args):pass
+    def do_POST(self):
+        self.rfile.read(int(self.headers['Content-Length']))
+        self.send_response(200);self.send_header('Content-Type','text/event-stream');self.end_headers()
+        def event(name,data):
+            self.wfile.write(f'event: {name}\ndata: {json.dumps(data)}\n\n'.encode());self.wfile.flush()
+        event('message_start',{'type':'message_start','message':{'model':'claude-stream-snapshot','usage':{'input_tokens':11}}})
+        event('content_block_delta',{'type':'content_block_delta','delta':{'type':'thinking_delta','thinking':'HIDDEN-FIXTURE'}})
+        event('content_block_delta',{'type':'content_block_delta','delta':{'type':'text_delta','text':'Visible '}})
+        event('content_block_delta',{'type':'content_block_delta','delta':{'type':'text_delta','text':'answer'}})
+        event('message_delta',{'type':'message_delta','delta':{'stop_reason':'end_turn'},'usage':{'output_tokens':22}})
+        if not getattr(type(self),'cut',False):
+            event('message_stop',{'type':'message_stop'})
+
+
 class ProviderTests(unittest.TestCase):
+    def test_native_claude_streaming(self):
+        server=ThreadingHTTPServer(('127.0.0.1',0),ClaudeStreamHandler)
+        thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+        try:
+            client=api.Client(api.validate_config({'provider':'claude','base_url':f'http://127.0.0.1:{server.server_port}/v1'}),'FAKE_TEST_KEY')
+            text,meta=client.complete('claude-fixture-a','test-prompt')
+            self.assertEqual(text,'Visible answer')
+            self.assertNotIn('HIDDEN',text)
+            self.assertEqual((meta['finish_reason'],meta['returned_model'],meta['usage']['total_tokens']),('end_turn','claude-stream-snapshot',33))
+        finally:
+            server.shutdown();server.server_close();thread.join()
+
+    def test_stream_option_validation(self):
+        self.assertTrue(api.validate_config({'provider':'openai'})['stream'])
+        self.assertFalse(api.validate_config({'provider':'openai','stream':False})['stream'])
+        with self.assertRaises(ValueError):
+            api.validate_config({'provider':'openai','stream':'yes'})
+
     def test_all_presets_validate(self):
         names={'claude','openai','gemini','glm','zai','kimi','kimi-intl','deepseek','grok'}
         self.assertEqual(set(api.provider_catalog()),names)
@@ -118,7 +152,7 @@ class ProviderTests(unittest.TestCase):
         server=ThreadingHTTPServer(('127.0.0.1',0),ClaudeHandler)
         thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
         try:
-            config=api.validate_config({'provider':'claude','base_url':f'http://127.0.0.1:{server.server_port}/v1'})
+            config=api.validate_config({'provider':'claude','base_url':f'http://127.0.0.1:{server.server_port}/v1','stream':False})
             client=api.Client(config,'FAKE_TEST_KEY')
             self.assertEqual(client.models(),['claude-fixture-a','claude-fixture-b'])
             text,meta=client.complete('claude-fixture-a','test-prompt')
