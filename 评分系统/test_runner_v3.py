@@ -274,7 +274,7 @@ class BatchTests(Fixture):
         bad.status = None
         args = argparse.Namespace(resume=batch_dir, batch=None, models=None, all_filtered=False, model=None, provider=None, config=None, runs=None,
                                   max_output_tokens=None, timeout_seconds=None, language=None, papers=None, filter='', yes=False, dry_run=False,
-                                  jobs=2, per_provider=1, keys_file=self.keys, output=self.out)
+                                  jobs=2, per_provider=1, keys_file=self.keys, output=self.out, probe=False)
         with redirect_stdout(StringIO()):
             api.batch_main(args)
         manifest = json.loads((batch_dir / 'batch.json').read_text(encoding='utf-8'))
@@ -287,7 +287,7 @@ class BatchTests(Fixture):
     def args(self, **kwargs):
         base = dict(resume=None, batch=None, models=None, all_filtered=False, model=None, provider='openai', config=None, runs=1,
                     max_output_tokens=None, timeout_seconds=None, language=None, papers='main', filter='', yes=False, dry_run=False,
-                    jobs=1, per_provider=1, keys_file=self.keys, output=self.out)
+                    jobs=1, per_provider=1, keys_file=self.keys, output=self.out, probe=False)
         base.update(kwargs)
         return argparse.Namespace(**base)
 
@@ -329,6 +329,31 @@ class BatchTests(Fixture):
             api.main()
         self.assertEqual(raised.exception.code, 2)
         self.assertIn('needs batch mode', stderr.getvalue())
+
+    def test_probe_reports_each_model_with_one_tiny_request_and_writes_no_session(self):
+        good, bad = self.mock(), self.mock(status=403)
+        jobs = self.jobs(self.spec(good, 'fixture-a'), self.spec(bad, 'fixture-b', provider='gemini'), self.spec(good, 'fixture-c', provider='glm'))
+        lines = []
+        rows = api.probe_jobs(jobs, self.keys, log=lines.append)
+        self.assertEqual([r[3] for r in rows], ['OK', 'FAILED', 'NO KEY'])
+        self.assertEqual(len(good.requests), 1)
+        self.assertEqual(len(bad.requests), 1)
+        self.assertEqual(list(self.out.iterdir()), [])
+        text = '\n'.join(lines)
+        self.assertIn('1/3 models answered', text)
+        self.assertNotIn('FAKE_KEY', text)
+        self.assertIn('access denied', text)
+
+    def test_probe_flag_goes_through_batch_main(self):
+        server = self.mock()
+        cfg = self.tmp / 'probe-cfg.json'
+        cfg.write_text(json.dumps({'provider': 'openai', 'base_url': server.url, 'timezone': 'UTC'}), encoding='utf-8')
+        buffer = StringIO()
+        with redirect_stdout(buffer):
+            api.batch_main(self.args(models='fixture-a,fixture-b', probe=True, provider=None, config=cfg))
+        self.assertEqual(sorted(r[1] for r in server.requests), ['fixture-a', 'fixture-b'])
+        self.assertEqual(list(self.out.iterdir()), [])
+        self.assertIn('2/2 models answered', buffer.getvalue())
 
     def test_models_flag_requires_provider_and_forbids_single_model(self):
         with self.assertRaisesRegex(ValueError, '--model selects one'):
