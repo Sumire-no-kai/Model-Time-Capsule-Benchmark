@@ -9,6 +9,11 @@
   "jobs": [
     {
       "provider": "openai",
+      "model": "gpt-6-astra",
+      "max_output_tokens": 128000
+    },
+    {
+      "provider": "openai",
       "model": "gpt-6.1-sol",
       "max_output_tokens": 128000
     },
