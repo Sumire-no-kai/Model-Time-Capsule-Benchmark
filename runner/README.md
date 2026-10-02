@@ -122,6 +122,20 @@ python runner/run_api.py --provider glm --models MODEL_A,MODEL_B --probe
 
 注意：探测通过只证明这个模型你能调用；推理型模型可能把 512 token 全花在思考上而没有可见回复，此时会提示“can still work with the full budget”。探测不能证明完整测试在你的额度和输出上限内跑得下来。按次计费的模型每次探测会消耗一次调用额度。
 
+### 中断后在原会话里接着跑：`--continue`
+
+后台进程被中断（会话结束、断网、被 `Ctrl-C`）后，`--resume` 默认会把没跑完的任务**从头**再跑一遍。加上 `--continue` 则在原会话里只补缺失的轮次：
+
+```bash
+python runner/run_api.py --resume results/batch-<时间>-<编号> --continue --dry-run
+python runner/run_api.py --resume results/batch-<时间>-<编号> --continue
+```
+
+- 自动按模型、语言、轮数、试卷和生成设置找到最新的未完成会话；找不到的任务照常新开会话。`--dry-run` 会显示“continues <会话> (n/m runs done)”和剩余请求数。
+- 中断时仍在途的请求标记为“interrupted”：结果未知、不计分，补跑的轮次接着编号。某一轮只有主卷、缺 B 卷时，只补发 B 卷。
+- 如果该会话记录的试卷、生成设置或答案库指纹和当前不一致，会拒绝续跑，不会把不可比的数据混进同一个会话。
+- 长时间的批量建议用 `nohup`，或在新的进程组里启动，避免因终端关闭而中断。
+
 ### 失败隔离、不重试
 
 - 一个任务失败不会影响其他任务。单个会话内，一次生成请求失败（403/404/429、网络、超时等）会让该会话停止：已完成的轮次保留，缺测的轮次不记 0 分。
