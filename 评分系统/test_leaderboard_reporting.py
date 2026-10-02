@@ -84,6 +84,16 @@ class ReportingTests(unittest.TestCase):
             self.assertIn('4/20 (1/2)', text)
             self.assertIn(board.response_path('session-a').as_posix(), text)
 
+    def test_truncation_column_counts_question_requests_and_reads_older_summaries(self):
+        for name, quality, expected in (('per-question', {'truncated_questions': 3, 'truncated_runs': 1}, 3), ('older', {'truncated_runs': 2}, 2),
+                                        ('clean', {'truncated_questions': 0, 'truncated_runs': 0}, 0), ('none', None, 0)):
+            summary = self.summary(name)
+            if quality is not None:
+                summary['run_quality'] = quality
+            self.save(name, summary)
+        truncated = {entry['session']: entry['truncated'] for entry in board.collect(self.results)}
+        self.assertEqual(truncated, {'per-question': 3, 'older': 2, 'clean': 0, 'none': 0})
+
     def test_batch_or_console_render_does_not_link_unpublished_archives(self):
         self.save('session-a', self.summary())
         text = board.render(board.collect(self.results), 'en')

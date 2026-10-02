@@ -184,7 +184,7 @@ def collect(results_dir, only=None, include_old=False):
             'objective_max': summary.get('maxima', {}).get('objective'),
             'honesty': summary.get('honesty') or {'count': 0, 'mean': None}, 'honesty_max': summary.get('maxima', {}).get('honesty'),
             'subjective': summary.get('subjective') or {'mean': None}, 'subjective_max': summary.get('maxima', {}).get('subjective', 20),
-            'truncated': (summary.get('run_quality') or {}).get('truncated_runs', 0),
+            'truncated': (summary.get('run_quality') or {}).get('truncated_questions', (summary.get('run_quality') or {}).get('truncated_runs', 0)),   # truncated question requests
             'rates': card_rates(runs), 'by_category': summary.get('by_category', {}), 'by_tier': summary.get('by_tier', {}),
             'subjective_runs': [r for r in runs if r.get('subjective_answer', '').strip()],
             'missing_subjective_runs': [r['run_id'] for r in runs if not r.get('subjective_answer', '').strip() and 'run_id' in r],
@@ -385,13 +385,18 @@ def publish(entries, root):
              '[评分要点](../docs/Q21_SCORING.md) · [Rubric](../docs/en/Q21_SCORING.md)', '',
              '| 模型 / Model | 语言 / Language | 日期 / Date | Q21 回答 / Responses |', '|---|---|---|---|']
     published = 0
+    current = set()
     for entry in sorted(entries, key=lambda e: (e['started'], e['session'])):
         if not entry['subjective_runs']:
             continue
         path = response_path(entry['session'])
+        current.add(path.name)
         (root / path).write_text(subjectives(entry), encoding='utf-8')
         index.append(f"| {cell(entry['model'])} ({cell(entry['provider'])}) | {cell(entry['language'])} | {cell(entry['started'][:10])} | [{len(entry['subjective_runs'])}/{entry['received']}]({path.name}) |")
         published += 1
+    for stale in archive.glob('session-*.md'):
+        if stale.name not in current:
+            stale.unlink()
     if not published:
         index += ['', '暂无 Q21 回答。 / No Q21 responses yet.']
     (archive / 'README.md').write_text('\n'.join(index) + '\n', encoding='utf-8')

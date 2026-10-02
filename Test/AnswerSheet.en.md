@@ -4,7 +4,7 @@
 
 ```json
 {
-  "version": "3.0",
+  "version": "1.0",
   "language": "en",
   "paper": "main",
   "answers": {
