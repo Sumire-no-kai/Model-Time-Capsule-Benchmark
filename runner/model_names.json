@@ -33,7 +33,9 @@
     "kimi-k2.7-code-highspeed": "Kimi K2.7 Code (HighSpeed)",
     "glm-4.5-air": "GLM-4.5-Air",
     "glm-5.3": "GLM-5.3",
-    "glm-5-turbo": "GLM-5-Turbo"
+    "glm-5-turbo": "GLM-5-Turbo",
+    "gpt-5.6-luna": "GPT-5.6 Luna",
+    "gpt-6-luna": "GPT-6 Luna"
   },
   "providers": {
     "gemini": "Google",

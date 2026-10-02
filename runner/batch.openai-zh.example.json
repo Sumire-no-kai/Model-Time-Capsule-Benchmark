@@ -9,6 +9,16 @@
   "jobs": [
     {
       "provider": "openai",
+      "model": "gpt-6-luna",
+      "max_output_tokens": 128000
+    },
+    {
+      "provider": "openai",
+      "model": "gpt-5.6-luna",
+      "max_output_tokens": 128000
+    },
+    {
+      "provider": "openai",
       "model": "o3",
       "max_output_tokens": 100000
     },
