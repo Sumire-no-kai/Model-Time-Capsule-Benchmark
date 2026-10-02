@@ -31,12 +31,14 @@
     "kimi-k2.6": "Kimi K2.6",
     "kimi-k2.7-code": "Kimi K2.7 Code",
     "kimi-k2.7-code-highspeed": "Kimi K2.7 Code (HighSpeed)",
-    "glm-4.5-air": "GLM-4.5-Air"
+    "glm-4.5-air": "GLM-4.5-Air",
+    "glm-5.3": "GLM-5.3",
+    "glm-5-turbo": "GLM-5-Turbo"
   },
   "providers": {
     "gemini": "Google",
-    "glm": "智谱 BigModel",
-    "zai": "Z.AI",
+    "glm": "智谱 (BigModel)",
+    "zai": "智谱 (Z.AI)",
     "openai": "OpenAI",
     "claude": "Anthropic",
     "kimi": "Moonshot",
