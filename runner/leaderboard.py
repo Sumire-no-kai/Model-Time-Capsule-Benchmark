@@ -53,9 +53,59 @@ TEXT = {
 }
 
 
+NAMES_FILE = ROOT / 'runner/model_names.json'
+WORDS = {'gemini': 'Gemini', 'gemma': 'Gemma', 'glm': 'GLM', 'gpt': 'GPT', 'claude': 'Claude', 'deepseek': 'DeepSeek', 'kimi': 'Kimi',
+         'grok': 'Grok', 'qwen': 'Qwen', 'llama': 'Llama', 'mistral': 'Mistral', 'flash': 'Flash', 'flashx': 'FlashX', 'pro': 'Pro',
+         'lite': 'Lite', 'preview': 'Preview', 'turbo': 'Turbo', 'air': 'Air', 'mini': 'Mini', 'nano': 'Nano', 'opus': 'Opus',
+         'sonnet': 'Sonnet', 'haiku': 'Haiku', 'chat': 'Chat', 'reasoner': 'Reasoner', 'it': 'IT', 'sol': 'Sol', 'max': 'Max',
+         'ultra': 'Ultra', 'plus': 'Plus', 'instruct': 'Instruct', 'thinking': 'Thinking', 'latest': 'Latest', 'omni': 'Omni'}
+_names = {}
+
+
+def name_tables():
+    if not _names:
+        try:
+            data = json.loads(NAMES_FILE.read_text(encoding='utf-8'))
+        except (OSError, ValueError):
+            data = {}
+        _names.update({'models': data.get('models', {}) if isinstance(data.get('models'), dict) else {},
+                       'providers': data.get('providers', {}) if isinstance(data.get('providers'), dict) else {}})
+    return _names
+
+
+def prettify(model_id):
+    """gpt-5.6-sol -> GPT 5.6 Sol, claude-opus-5-5 -> Claude Opus 5.5, ...-20260901 -> (2026-09-01); sizes like 26b become 26B."""
+    tokens = model_id.split('-')
+    merged = []
+    for token in tokens:
+        if merged and re.fullmatch(r'\d', token) and re.fullmatch(r'\d', merged[-1]):
+            merged[-1] += '.' + token                      # a one-digit pair is a version written with a hyphen: 5-5 -> 5.5
+        else:
+            merged.append(token)
+    words = []
+    for token in merged:
+        low = token.lower()
+        if low in WORDS:
+            words.append(WORDS[low])
+        elif re.fullmatch(r'20\d{6}', token):
+            words.append(f'({token[:4]}-{token[4:6]}-{token[6:]})')
+        elif re.fullmatch(r'\d+(\.\d+)*', token):
+            words.append(token)
+        elif re.fullmatch(r'\d+(\.\d+)?[bkm]', low) or re.fullmatch(r'[a-z]\d+[a-z]?', low):
+            words.append(token.upper())                    # 26b -> 26B, a4b -> A4B
+        else:
+            words.append(token[:1].upper() + token[1:])
+    return ' '.join(words)
+
+
 def display_model(model):
-    """Shown name only: Gemini model IDs carry an API prefix ("models/") that is noise on a leaderboard."""
-    return model.removeprefix('models/')
+    """Shown name only: the official-looking spelling. The exact API ID stays in the full table and in the data."""
+    key = model.removeprefix('models/')
+    return name_tables()['models'].get(key) or prettify(key)
+
+
+def display_provider(provider):
+    return name_tables()['providers'].get(provider, provider)
 
 
 def cell(value):
@@ -178,7 +228,7 @@ def table(entries, words, response_links=False):
         sub = words['subjective_none'] if entry['subjective']['mean'] is None else f"{entry['subjective']['mean']}/{entry['subjective_max']}"
         if entry['subjective'].get('count') is not None:
             sub += f" ({entry['subjective']['count']}/{entry['received']})"
-        cells = [rank, cell(f"{display_model(entry['model'])} ({entry['provider']})"),
+        cells = [rank, cell(f"{display_model(entry['model'])} ({display_provider(entry['provider'])})") + f"<br><sub>{cell(entry['model'].removeprefix('models/'))}</sub>",
                  f"{entry['mean']}/{entry['objective_max']}{sd} ({entry['min']}–{entry['max']})",
                  f"{entry['received']}/{entry['planned']}", b, sub, versus_previous(previous, entry, words),
                  entry['started'][:10], entry['truncated'] or 0, cell(entry.get('settings', '—')),
@@ -208,7 +258,7 @@ def compact_table(entries, words):
             rank = position
         spread = '—' if entry['sd'] is None else f"± {entry['sd']:.1f} ({entry['min']}–{entry['max']})"
         b = words['b_none'] if not entry['honesty']['count'] else f"{entry['honesty']['mean']}"
-        cells = [MEDALS.get(rank, rank), f"**{cell(display_model(entry['model']))}** <sub>{cell(entry['provider'])}</sub>",
+        cells = [MEDALS.get(rank, rank), f"**{cell(display_model(entry['model']))}** <sub>{cell(display_provider(entry['provider']))}</sub>",
                  f"**{entry['mean']}** / {entry['objective_max']}", score_bar(entry['mean'], entry['objective_max']),
                  versus_previous(previous, entry, words), spread, b, f"{entry['received']}/{entry['planned']}", entry['truncated'] or 0]
         lines.append('| ' + ' | '.join(str(c) for c in cells) + ' |')
@@ -223,7 +273,7 @@ def means_table(entries, words, key):
     heading = words['category_title' if key == 'by_category' else 'tier_title']
     lines = [f'**{heading}**', '', '| ' + ' | '.join([words['model'], *labels.values()]) + ' |', '|' + '---|' * (len(labels) + 1)]
     for entry in sorted(entries, key=lambda e: (-e['mean'], e['started'])):
-        values = [cell(f"{display_model(entry['model'])} ({entry['provider']})")]
+        values = [cell(f"{display_model(entry['model'])} ({display_provider(entry['provider'])})")]
         for name in labels:
             value = entry.get(key, {}).get(name)
             values.append(f"{value['mean']}/{value['max']}" if value else '—')

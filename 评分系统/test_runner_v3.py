@@ -453,7 +453,7 @@ class LeaderboardTests(unittest.TestCase):
         self.assertIn('Preview', text)
         formal = text.split('**Formal')[1].split('**Preview')[0]
         rows = [line for line in formal.splitlines() if line.startswith('| ') and 'Rank' not in line]
-        self.assertEqual([r.split('|')[2].split(' (')[0].strip() for r in rows], ['top', 'close', 'far', 'tie-a', 'tie-b'])
+        self.assertEqual([r.split('|')[2].split(' (')[0].strip() for r in rows], ['Top', 'Close', 'Far', 'Tie A', 'Tie B'])
         self.assertTrue(rows[1].split('|')[7].strip().startswith('≈ not separable'))      # top vs close: gap 1 < 2 SE
         self.assertNotIn('≈', rows[2].split('|')[7])                                       # far is clearly lower
         self.assertEqual([r.split('|')[1].strip() for r in rows[3:]], ['4', '4'])          # equal means share a rank
@@ -469,11 +469,11 @@ class LeaderboardTests(unittest.TestCase):
                    make('only-zh', 'zh', [100, 101, 99, 100, 100])]
         text = api.leaderboard.render(entries, 'en')
         pair = text.split('Chinese vs English')[1]
-        self.assertIn('| same |', pair)
-        self.assertIn('gap within noise', pair.split('| same |')[1].split('\n')[0])
-        self.assertIn('Chinese clearly higher', pair.split('| skewed |')[1].split('\n')[0])
+        self.assertIn('| Same |', pair)
+        self.assertIn('gap within noise', pair.split('| Same |')[1].split('\n')[0])
+        self.assertIn('Chinese clearly higher', pair.split('| Skewed |')[1].split('\n')[0])
         self.assertIn('+50.4', pair)
-        self.assertNotIn('only-zh', pair)
+        self.assertNotIn('Only Zh', pair)
         self.assertNotIn('Chinese vs English', api.leaderboard.render([make('x', 'zh', [1, 2, 3, 4, 5])], 'en'))
 
     def test_models_with_different_generation_settings_share_one_board(self):
@@ -515,6 +515,21 @@ class LeaderboardTests(unittest.TestCase):
         full = board.render(entries, 'en')                                                  # LEADERBOARD.md keeps the full wide table
         self.assertNotIn('<details>', full)
         self.assertIn('Whole-question pass rate', full)
+
+    def test_model_names_are_shown_in_their_formal_spelling_with_the_api_id_kept(self):
+        board = api.leaderboard
+        for raw, shown in (('models/gemini-3.1-flash-lite', 'Gemini 3.1 Flash-Lite'), ('gpt-5.6-sol', 'GPT 5.6 Sol'), ('glm-4.5-air', 'GLM 4.5 Air'),
+                           ('deepseek-chat', 'DeepSeek Chat'), ('claude-opus-5-5', 'Claude Opus 5.5'), ('claude-haiku-4-5-20251001', 'Claude Haiku 4.5 (2025-10-01)'),
+                           ('kimi-k2-thinking', 'Kimi K2 Thinking'), ('models/gemma-4-26b-a4b-it', 'Gemma 4 26B A4B (Instruct)')):
+            self.assertEqual(board.display_model(raw), shown, raw)
+        self.assertEqual(board.display_provider('gemini'), 'Google')
+        self.assertEqual(board.display_provider('some-new-provider'), 'some-new-provider')
+        entry = self.entry('models/gemini-3.5-flash-lite', [10, 11, 9, 10, 10], provider='gemini')
+        compact = board.render([entry], 'en', compact=True).split('<details>')[0]
+        self.assertIn('**Gemini 3.5 Flash-Lite** <sub>Google</sub>', compact)
+        self.assertNotIn('models/', compact)
+        full = board.render([entry], 'en')
+        self.assertIn('Gemini 3.5 Flash-Lite (Google)<br><sub>gemini-3.5-flash-lite</sub>', full)       # exact API ID stays traceable
 
     def test_cohorts_do_not_mix(self):
         entries = [self.entry('a', [1, 2, 3, 4, 5]), self.entry('b', [1, 2, 3, 4, 5], cohort=('3.0', 'en', 'api-no-tools', 'k', 65536, None, '{}'), cohort_label='cohort B')]

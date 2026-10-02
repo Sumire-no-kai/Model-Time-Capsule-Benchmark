@@ -149,8 +149,8 @@ class ReportingTests(unittest.TestCase):
         text = board.render(board.collect(self.results), 'en')
         ranked = text.split('**Preview')[1].split('**Category means')[0]
         rows = [line for line in ranked.splitlines() if line.startswith('| ') and not line.startswith('| Rank')]
-        self.assertIn('| 1 | higher', rows[0])
-        self.assertIn('| 2 | lower', rows[1])
+        self.assertIn('| 1 | Higher', rows[0])
+        self.assertIn('| 2 | Lower', rows[1])
 
     def test_publish_validates_both_readmes_before_writing(self):
         (self.root / 'README.en.md').write_text('no markers')
